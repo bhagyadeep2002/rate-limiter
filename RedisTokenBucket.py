@@ -33,8 +33,16 @@ class RedisTokenBucket:
                     })
                     pipe.expire(key, 3600)
                     pipe.execute()
-                    return allowed
+                    return {
+                        "allowed": allowed,
+                        "tokens": tokens,
+                        "last_refill": last_refill
+                    }
             except redis.WatchError:
                 continue
-        return False
+        return {
+                "allowed": allowed,
+                "tokens": tokens,
+                "last_refill": last_refill
+            }
     
