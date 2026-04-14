@@ -2,7 +2,7 @@ import redis
 from RedisTokenBucket import RedisTokenBucket
 from fastapi import FastAPI, Request
 redis_client = redis.Redis(host="localhost", port=6379, db=0)
-token_bucket = RedisTokenBucket(redis_client=redis_client, capacity=10, refill_rate=1)
+token_bucket = RedisTokenBucket(redis_client=redis_client, capacity=4, refill_rate=1)
 
 app = FastAPI()
 
@@ -10,7 +10,7 @@ app = FastAPI()
 def home():
     return {"message": "Welcome to the rate-limited API!"}
 
-@app.get("/get-ip")
+@app.get("/get-ip-allow")
 def get_ip(request: Request):
     forwarded = request.headers.get("X-Forwarded-For")
     if forwarded:
@@ -20,3 +20,13 @@ def get_ip(request: Request):
         return {"message": f"Your IP {client_ip} is allowed to access the resource."}
     else:
         return {"message": f"Rate limit exceeded for IP {client_ip}. Please try again later."}, 429
+
+@app.get("/borrow-requests")
+def borrow_requests(request: Request):
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        client_ip = forwarded.split(",")[0]
+    client_ip = request.client.host
+    result = token_bucket.borrow_requests(user_id=client_ip, num_requests=5)
+    print(result)
+    return result
